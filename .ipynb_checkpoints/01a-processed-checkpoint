@@ -1,0 +1,520 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/miaflynn/CYPLAN255-Final-Project/blob/main/cleaning1.ipynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install contextily"
+      ],
+      "metadata": {
+        "id": "U-xYBTtTxXhv",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "046c78b0-8871-447f-e2f8-8bf4b2b5e0d6"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Collecting contextily\n",
+            "  Downloading contextily-1.7.0-py3-none-any.whl.metadata (3.1 kB)\n",
+            "Requirement already satisfied: geopy in /usr/local/lib/python3.12/dist-packages (from contextily) (2.4.1)\n",
+            "Requirement already satisfied: matplotlib in /usr/local/lib/python3.12/dist-packages (from contextily) (3.10.0)\n",
+            "Collecting mercantile (from contextily)\n",
+            "  Downloading mercantile-1.2.1-py3-none-any.whl.metadata (4.8 kB)\n",
+            "Requirement already satisfied: pillow in /usr/local/lib/python3.12/dist-packages (from contextily) (11.3.0)\n",
+            "Requirement already satisfied: rasterio in /usr/local/lib/python3.12/dist-packages (from contextily) (1.5.0)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.12/dist-packages (from contextily) (2.32.4)\n",
+            "Requirement already satisfied: joblib in /usr/local/lib/python3.12/dist-packages (from contextily) (1.5.3)\n",
+            "Requirement already satisfied: xyzservices in /usr/local/lib/python3.12/dist-packages (from contextily) (2025.11.0)\n",
+            "Requirement already satisfied: geographiclib<3,>=1.52 in /usr/local/lib/python3.12/dist-packages (from geopy->contextily) (2.1)\n",
+            "Requirement already satisfied: contourpy>=1.0.1 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (1.3.3)\n",
+            "Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (0.12.1)\n",
+            "Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (4.62.0)\n",
+            "Requirement already satisfied: kiwisolver>=1.3.1 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (1.5.0)\n",
+            "Requirement already satisfied: numpy>=1.23 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (2.0.2)\n",
+            "Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (26.0)\n",
+            "Requirement already satisfied: pyparsing>=2.3.1 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (3.3.2)\n",
+            "Requirement already satisfied: python-dateutil>=2.7 in /usr/local/lib/python3.12/dist-packages (from matplotlib->contextily) (2.9.0.post0)\n",
+            "Requirement already satisfied: click>=3.0 in /usr/local/lib/python3.12/dist-packages (from mercantile->contextily) (8.3.1)\n",
+            "Requirement already satisfied: affine in /usr/local/lib/python3.12/dist-packages (from rasterio->contextily) (2.4.0)\n",
+            "Requirement already satisfied: attrs in /usr/local/lib/python3.12/dist-packages (from rasterio->contextily) (25.4.0)\n",
+            "Requirement already satisfied: certifi in /usr/local/lib/python3.12/dist-packages (from rasterio->contextily) (2026.2.25)\n",
+            "Requirement already satisfied: cligj>=0.5 in /usr/local/lib/python3.12/dist-packages (from rasterio->contextily) (0.7.2)\n",
+            "Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.12/dist-packages (from requests->contextily) (3.4.5)\n",
+            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.12/dist-packages (from requests->contextily) (3.11)\n",
+            "Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.12/dist-packages (from requests->contextily) (2.5.0)\n",
+            "Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil>=2.7->matplotlib->contextily) (1.17.0)\n",
+            "Downloading contextily-1.7.0-py3-none-any.whl (16 kB)\n",
+            "Downloading mercantile-1.2.1-py3-none-any.whl (14 kB)\n",
+            "Installing collected packages: mercantile, contextily\n",
+            "Successfully installed contextily-1.7.0 mercantile-1.2.1\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "p97_I-EA0uwf"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "import geopandas as gpd\n",
+        "import numpy as np\n",
+        "\n",
+        "#added more that we use in lab\n",
+        "import os\n",
+        "%matplotlib inline\n",
+        "import matplotlib.pyplot as plt\n",
+        "from shapely.geometry import LineString\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from google.colab import drive\n",
+        "drive.mount('/content/drive')"
+      ],
+      "metadata": {
+        "id": "8tE5t295dh4p",
+        "outputId": "b08d4af2-6c21-4677-8026-47cda18b1bf5",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Mounted at /content/drive\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!ls /content/drive\n",
+        "!ls /content/drive/Shareddrives"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "CU_fabkoQvTC",
+        "outputId": "b6118e6c-a1e5-4c5d-823d-10cd6b5c663f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "MyDrive  Shareddrives\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "df = pd.read_csv(\"/content/drive/MyDrive/C255_final_project/raw/rbl_sf.csv\")"
+      ],
+      "metadata": {
+        "id": "xBzWtlvm25ID",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 329
+        },
+        "outputId": "cf862c46-162c-48a7-b03f-34171124920a"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "FileNotFoundError",
+          "evalue": "[Errno 2] No such file or directory: '/content/drive/MyDrive/C255_final_project/raw/rbl_sf.csv'",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mFileNotFoundError\u001b[0m                         Traceback (most recent call last)",
+            "\u001b[0;32m/tmp/ipykernel_308/1800379897.py\u001b[0m in \u001b[0;36m<cell line: 0>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mpandas\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mpd\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      2\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m----> 3\u001b[0;31m \u001b[0mdf\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mpd\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mread_csv\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"/content/drive/MyDrive/C255_final_project/raw/rbl_sf.csv\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m/usr/local/lib/python3.12/dist-packages/pandas/io/parsers/readers.py\u001b[0m in \u001b[0;36mread_csv\u001b[0;34m(filepath_or_buffer, sep, delimiter, header, names, index_col, usecols, dtype, engine, converters, true_values, false_values, skipinitialspace, skiprows, skipfooter, nrows, na_values, keep_default_na, na_filter, verbose, skip_blank_lines, parse_dates, infer_datetime_format, keep_date_col, date_parser, date_format, dayfirst, cache_dates, iterator, chunksize, compression, thousands, decimal, lineterminator, quotechar, quoting, doublequote, escapechar, comment, encoding, encoding_errors, dialect, on_bad_lines, delim_whitespace, low_memory, memory_map, float_precision, storage_options, dtype_backend)\u001b[0m\n\u001b[1;32m   1024\u001b[0m     \u001b[0mkwds\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mupdate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mkwds_defaults\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1025\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1026\u001b[0;31m     \u001b[0;32mreturn\u001b[0m \u001b[0m_read\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mfilepath_or_buffer\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mkwds\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1027\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1028\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.12/dist-packages/pandas/io/parsers/readers.py\u001b[0m in \u001b[0;36m_read\u001b[0;34m(filepath_or_buffer, kwds)\u001b[0m\n\u001b[1;32m    618\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    619\u001b[0m     \u001b[0;31m# Create the parser.\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 620\u001b[0;31m     \u001b[0mparser\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mTextFileReader\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mfilepath_or_buffer\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwds\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    621\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    622\u001b[0m     \u001b[0;32mif\u001b[0m \u001b[0mchunksize\u001b[0m \u001b[0;32mor\u001b[0m \u001b[0miterator\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.12/dist-packages/pandas/io/parsers/readers.py\u001b[0m in \u001b[0;36m__init__\u001b[0;34m(self, f, engine, **kwds)\u001b[0m\n\u001b[1;32m   1618\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1619\u001b[0m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mhandles\u001b[0m\u001b[0;34m:\u001b[0m \u001b[0mIOHandles\u001b[0m \u001b[0;34m|\u001b[0m \u001b[0;32mNone\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1620\u001b[0;31m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_engine\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_make_engine\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mf\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mengine\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1621\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1622\u001b[0m     \u001b[0;32mdef\u001b[0m \u001b[0mclose\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;34m->\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.12/dist-packages/pandas/io/parsers/readers.py\u001b[0m in \u001b[0;36m_make_engine\u001b[0;34m(self, f, engine)\u001b[0m\n\u001b[1;32m   1878\u001b[0m                 \u001b[0;32mif\u001b[0m \u001b[0;34m\"b\"\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mmode\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1879\u001b[0m                     \u001b[0mmode\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;34m\"b\"\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1880\u001b[0;31m             self.handles = get_handle(\n\u001b[0m\u001b[1;32m   1881\u001b[0m                 \u001b[0mf\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1882\u001b[0m                 \u001b[0mmode\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.12/dist-packages/pandas/io/common.py\u001b[0m in \u001b[0;36mget_handle\u001b[0;34m(path_or_buf, mode, encoding, compression, memory_map, is_text, errors, storage_options)\u001b[0m\n\u001b[1;32m    871\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mioargs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mencoding\u001b[0m \u001b[0;32mand\u001b[0m \u001b[0;34m\"b\"\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mioargs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mmode\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    872\u001b[0m             \u001b[0;31m# Encoding\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 873\u001b[0;31m             handle = open(\n\u001b[0m\u001b[1;32m    874\u001b[0m                 \u001b[0mhandle\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    875\u001b[0m                 \u001b[0mioargs\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mmode\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mFileNotFoundError\u001b[0m: [Errno 2] No such file or directory: '/content/drive/MyDrive/C255_final_project/raw/rbl_sf.csv'"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gdf = df\n",
+        "gdf.head()"
+      ],
+      "metadata": {
+        "id": "99h4dLzb3Fc1"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "###renaming columns\n",
+        "\n",
+        "new_names = gdf.columns.str.strip().str.replace(' #', '_num').str.replace(' - ', '_').str.replace(' ', '_').str.lower()\n",
+        "gdf.columns = new_names\n",
+        "gdf.columns"
+      ],
+      "metadata": {
+        "id": "9W6UYS5o3G5F"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "num_duplicates = gdf.duplicated().sum()\n",
+        "pct_duplicates = (num_duplicates / len(gdf)) * 100\n",
+        "print(num_duplicates, pct_duplicates)\n",
+        "\n",
+        "##no duplicates in dataset"
+      ],
+      "metadata": {
+        "id": "j37lDPT731P7"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "type(gdf)"
+      ],
+      "metadata": {
+        "id": "z5RzTtcvTvKq"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "##fixing geometries of business location column\n",
+        "\n",
+        "#I'm adjusting this code a little bc it's not running for me\n",
+        "\n",
+        "from shapely import wkt\n",
+        "\n",
+        "# Making copy and removing rows without location data bc it won't run otherwise\n",
+        "df = df[df[\"business_location\"].notna()].copy()\n",
+        "\n",
+        "# Converting string to geometry\n",
+        "df[\"geometry\"] = df[\"business_location\"].apply(wkt.loads)\n",
+        "\n",
+        "#Right now it's a df so I'm making it a gdf\n",
+        "gdf = gpd.GeoDataFrame(df, geometry=\"geometry\", crs=\"EPSG:4326\")\n"
+      ],
+      "metadata": {
+        "id": "mbsoHVnu67yY"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "##setting geomtery\n",
+        "gdf = gdf.set_geometry('geometry')"
+      ],
+      "metadata": {
+        "id": "sS8Camm-7eMj"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "##setting crs and correcting datetimes\n",
+        "\n",
+        "gdf['business_start_date'] = pd.to_datetime(gdf['business_start_date'], format = '%m/%d/%Y', errors = 'coerce')\n",
+        "gdf['business_end_date'] = pd.to_datetime(gdf['business_end_date'], format = '%m/%d/%Y', errors = 'coerce')\n",
+        "gdf['location_start_date'] = pd.to_datetime(gdf['location_start_date'], format = '%m/%d/%Y', errors = 'coerce')\n",
+        "gdf['location_end_date'] = pd.to_datetime(gdf['location_end_date'], format = '%m/%d/%Y', errors = 'coerce')\n",
+        "gdf.info()"
+      ],
+      "metadata": {
+        "id": "wu8mbZuK80DQ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "missing = gdf.isna().sum()\n",
+        "display(missing.sort_values(ascending=False))"
+      ],
+      "metadata": {
+        "collapsed": true,
+        "id": "j0LM3ORfAeOP"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "##admin closed to boolean\n",
+        "admin_closed_mask = gdf['administratively_closed'] == '***Administratively Closed'\n",
+        "gdf['administratively_closed_bool'] = admin_closed_mask"
+      ],
+      "metadata": {
+        "id": "MNVB__KwlTXE"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "## filtering for having a code\n",
+        "\n",
+        "lic_mask = gdf['lic_code'].notna()\n",
+        "print(lic_mask.sum())\n",
+        "naics_mask = gdf['naics_code'].notna()\n",
+        "print(naics_mask.sum())\n",
+        "gdf_hascode = gdf[lic_mask | naics_mask]\n",
+        "\n",
+        "code_cols = [\n",
+        "    'naics_code', 'naics_code_description', 'lic_code','lic_code_description'\n",
+        "]\n",
+        "\n",
+        "display(gdf_hascode[code_cols].sample(20))\n",
+        "\n",
+        "##filtered only by businesses with code, but still having business locations all across the United States?\n",
+        "# I think a lot of the addresses are elsewhere bc the business headquarters location may not be in SF - if you look at the table it shows this - Abigail\n",
+        "\n",
+        "# Commenting this out bc I'm going to also filter the boundaries of Sf - Abigail\n",
+        "# gdf_hascode_sf = gdf_hascode[gdf_hascode['city'] == 'San Francisco']\n",
+        "\n",
+        "# Bounds from here: https://wiki.openstreetmap.org/wiki/San_Francisco,_California\n",
+        "sanfran_bounds = {\n",
+        "    \"minx\": -123,\n",
+        "    \"maxx\": -121.5,\n",
+        "    \"miny\": 37,\n",
+        "    \"maxy\": 38\n",
+        "}\n",
+        "\n",
+        "gdf_hascode_sf = gdf_hascode[\n",
+        "    (gdf_hascode['city'] == 'San Francisco') &\n",
+        "    (gdf_hascode.geometry.x >= sanfran_bounds[\"minx\"]) &\n",
+        "    (gdf_hascode.geometry.x <= sanfran_bounds[\"maxx\"]) &\n",
+        "    (gdf_hascode.geometry.y >= sanfran_bounds[\"miny\"]) &\n",
+        "    (gdf_hascode.geometry.y <= sanfran_bounds[\"maxy\"])\n",
+        "]\n",
+        "\n",
+        "gdf_hascode_sf.plot()"
+      ],
+      "metadata": {
+        "id": "I0y0RhGJgFVm"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# adding another plot and importing a shpfile of SF so we can see where the points are in SF\n",
+        "\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "# Importing SF geometry\n",
+        "# URL for 2025 TIGER/Line Place boundaries - info here on\n",
+        "## how to use: https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html\n",
+        "url = \"https://www2.census.gov/geo/tiger/TIGER2025/PLACE/tl_2025_06_place.zip\"\n",
+        "\n",
+        "places = gpd.read_file(url)\n",
+        "\n",
+        "# Filtered to SF\n",
+        "sf_poly = places[\n",
+        "    (places[\"NAME\"] == \"San Francisco\") &\n",
+        "    (places[\"STATEFP\"] == \"06\")   # 06 = California\n",
+        "]\n",
+        "\n",
+        "\n",
+        "# eproject to same as our gdf\n",
+        "sf_poly = sf_poly.to_crs(epsg=4326)\n",
+        "\n",
+        "# keeping just the points in sf bc there are a lot outside\n",
+        "gdf_sf = gpd.sjoin(gdf_hascode_sf, sf_poly, predicate=\"within\") ##joined with gdf_hascode_sf instead, so we only have coded businesses -Sean\n",
+        "\n",
+        "fig, ax = plt.subplots(figsize=(10,10))\n",
+        "\n",
+        "# plotting the boundary of SF\n",
+        "sf_poly.plot(ax=ax, color=\"lightgray\", edgecolor=\"black\")\n",
+        "\n",
+        "# plotting business points on top\n",
+        "gdf_sf.plot(ax=ax, color=\"blue\", markersize=10, alpha=0.6)\n",
+        "\n",
+        "plt.show()\n",
+        "\n",
+        "# the circles to the left are the farallon islands lol don't need that"
+      ],
+      "metadata": {
+        "id": "sreGivAtWNcr"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "####Cleaning decisions to make\n",
+        "*   What years do we want to narrow to?\n",
+        "    * 2016-2026\n",
+        "*   What business types do we want to include?\n",
+        "    * Professional, Scientific, and Technical Services; Retail Trade; Private Education and Health Services; Arts, Entertainment, and Recreation; Financial Service; Information; Multiple; Certain Services; Wholesale Trade\n",
+        "\n",
+        "*   Do we want to look at business or location start/end dates? I'm thinking location makes the most sense - Abigail\n",
+        "    * Location start and end date\n",
+        "* Which columns can we drop? - Abigail\n",
+        "\n",
+        "    * Imp - This is from the metadata: When the City transitioned to a new system in 2014, only active business accounts were migrated. As a result, any businesses that had already closed by that point were not included in the current dataset.In 2018, TTX did a major cleanup of dormant and unresponsive accounts and closed approximately 40,000 inactive businesses. - Abigail\n",
+        "  \n",
+        "\n",
+        "* Look @ this: https://opendatasanfrancisco.com/registered-businesses - Abigail\n",
+        "\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "JlhWnyCpfRPE"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "##quickly looking at gdf_sf codes\n",
+        "\n",
+        "display(gdf_sf['naics_code_description'].value_counts())\n",
+        "display(gdf_sf['lic_code_description'].value_counts())"
+      ],
+      "metadata": {
+        "id": "AOLh4934sTli"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "-NG4nS3NfIqA"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "##plotting just 2015 with basemap of sf - Sean\n",
+        "\n",
+        "# mask_2015 = gdf_sf['location_end_date'].dt.year >= 2015\n",
+        "# gdf_sf_2015 = gdf_sf[mask_2015]\n",
+        "# import contextily as cx\n",
+        "# ax = gdf_sf_2015.plot(column=gdf_sf_2015['location_start_date'].dt.month, figsize=(10, 10), alpha=0.5, edgecolor=\"k\", legend=True)\n",
+        "# cx.add_basemap(ax, crs=gdf_sf.crs)"
+      ],
+      "metadata": {
+        "id": "IkTpQyyBhTie"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Using the code from class to make an interactive map - Abigail\n",
+        "# it's taking forever to load tho\n",
+        "\n",
+        "# m = gdf_sf.explore(\n",
+        "#     column=\"ownership_name\",\n",
+        "#     tiles=\"CartoDB Positron\",\n",
+        "#     tooltip=True,\n",
+        "#     popup=True,\n",
+        "#     legend=True\n",
+        "# )\n",
+        "\n",
+        "# m"
+      ],
+      "metadata": {
+        "id": "R4oE_29jazF7"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# gdf_sf[['geometry']].explore(\n",
+        "#     tiles=\"CartoDB positron\",\n",
+        "#     marker_type=\"circle\",\n",
+        "#     zoom_start=12\n",
+        "# )"
+      ],
+      "metadata": {
+        "id": "bieFFoxPalxq"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "Enang8AMiOL4"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
