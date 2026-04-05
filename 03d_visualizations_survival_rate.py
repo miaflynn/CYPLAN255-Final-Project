@@ -71,10 +71,10 @@ survival_tracts_grouped['total'] = pre_covid_tracts_grouped['closed'] + survival
 survival_tracts_grouped['survival_rate'] = survival_tracts_grouped['opened'] / survival_tracts_grouped['total']
 
 # =============================================================================
-# mapping
+# exporting survival rate gdf
 # =============================================================================
 
-survival_tracts_grouped.to_parquet('/Users/Sean1/Documents/GitHub/CYPLAN255-Final-Project/data/survival_rates_GEOID.parquet')
+# survival_tracts_grouped.to_parquet('/Users/Sean1/Documents/GitHub/CYPLAN255-Final-Project/data/survival_rates_GEOID.parquet')
 
 # =============================================================================
 # mapping
