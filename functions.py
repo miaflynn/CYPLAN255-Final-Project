@@ -73,4 +73,4 @@ def group_points_by_poly (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
 
 def clip_to_2016(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     year_col = 'year_open' if 'year_open' in gdf.columns else 'year'
-    return gdf[gdf[year_col] >= 2016]
+    return gdf[(gdf[year_col] >= 2016) & (gdf[year_col] <= 2025)]
