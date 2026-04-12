@@ -1,9 +1,12 @@
 import pandas as pd
 import numpy as np
 import geopandas as gpd
+import plotly.graph_objects as go
+import plotly.express as px
+import matplotlib.pyplot as plt
 
 
-def group_points_by_poly_year (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
+def group_points_by_poly_year (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame, naics_filter: str = None):
     """
     Groups all the business location points by tract, year and status (open or closed)
     
@@ -35,6 +38,8 @@ def group_points_by_poly_year (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFr
         on="GEOID",
         how="left"
     ).fillna(0)
+
+    tracts_plot['naics_filter'] = naics_filter if naics_filter else 'all'
 
     return tracts_plot
 
@@ -75,21 +80,70 @@ def clip_to_2016(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     year_col = 'year_open' if 'year_open' in gdf.columns else 'year'
     return gdf[(gdf[year_col] >= 2016) & (gdf[year_col] <= 2025)]
 
+def filter_by_naics_name(gdf: gpd.GeoDataFrame, naics_name:str):
+  """
+    filters a GeoDataFrame by an naics code string
 
-def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDataFrame, poly_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """
-    Calculates business dynamics metrics for each tract and year.
+    Returns: GeoDataFrame filtered
+  """
+  naics_dict = {
     
+    #all
+    
+
+    'Information': '5100-5199',
+    'Financial Services': '5210-5239',
+    'Accommodations': '7210-7219',
+    'Retail Trade': '4400-4599',
+    'Construction': '2300-2399',
+    'Food Services': '7220-7229',
+    'Manufacturing': '3100-3399',
+    'Real Estate and Rental and Leasing Services': '5300-5399',
+    'Arts, Entertainment, and Recreation': '7100-7199',
+    'Private Education and Health Services': '6100-6299',
+    'Administrative and Support Services': '5600-5699',
+    'Professional, Scientific, and Technical Services': '5400-5499',
+    'Certain Services': '8100-8139',
+    'Wholesale Trade': '4200-4299',
+    'Transportation and Warehousing': '4800-4999',
+    'Insurance': '5240-5249',
+    'Utilities': '2200-2299',
+
+    #special categories
+    'Retail, Food and Arts/Entertainment':'7220-7229|4400-4599|7100-7199'  
+  }
+
+  naics=naics_dict[naics_name]
+  gdf = gdf[gdf['naics_code'].str.contains(naics, na=False)]
+
+  return gdf
+  
+#break
+
+def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDataFrame, poly_gdf: gpd.GeoDataFrame, naics_name: str = None) -> gpd.GeoDataFrame:
+    """
+    Groups by tract and year and calculates business dynamics metrics for each tract and year.
+    Takes an optional naics_name variable to filter by naics code
+
     Parameters:
-        open_close_gdf: GeoDataFrame with openings and closings per tract per year
+        open_close_gdf: GeoDataFrame with raw business point data (openings and closings)
         biz_gdf: GeoDataFrame with individual business records
         poly_gdf: GeoDataFrame with tract/block group geometries and GEOID
+        naics_name: optional NAICS name string to filter by (supports | for multiple codes)
     
     Returns:
         GeoDataFrame with net_change, growth_pct_over_2016, biz_stock, net_entry_rate, gross_exit_rate
     """
-    gdf = open_close_gdf.copy()
+    open_close = open_close_gdf.copy()
     biz = biz_gdf.copy()
+
+    # filter to naics if provided
+    if naics_name and naics_name != 'all':
+        open_close = filter_by_naics_name(open_close, naics_name)
+        biz = filter_by_naics_name(biz, naics_name)
+
+    # group points to tracts
+    gdf = group_points_by_poly_year(open_close, poly_gdf, naics_filter=naics_name)
 
     ## net change (openings-closings)
     gdf['net_change'] = gdf['opened'] - gdf['closed']
@@ -134,6 +188,8 @@ def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDat
     # gross exit rate, to help show how much turnover there was in relation to the net entry
     gdf['gross_exit_rate'] = (gdf['opened'] / gdf['biz_stock']) * 100
 
+    # total activity
+    gdf['total_activity'] = gdf['opened'] + gdf['closed']
 
     return gdf
 
@@ -186,5 +242,6 @@ def choropleth_animated(gdf: gpd.GeoDataFrame, color_col: str, epc_tracts: gpd.G
         name='EPC Tracts'
     ))
 
-    fig.show()
+    fig.update_layout(title=f'{color_col} — {plot_gdf["naics_filter"].iloc[0]}')
+
     return fig
