@@ -136,3 +136,55 @@ def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDat
 
 
     return gdf
+
+def choropleth_animated(gdf: gpd.GeoDataFrame, color_col: str, epc_tracts: gpd.GeoDataFrame, start_year: int = 2016) -> go.Figure:
+    """
+    Creates an animated choropleth map with EPC tract outlines.
+    
+    Parameters:
+        gdf: GeoDataFrame with tract data
+        color_col: column to use for choropleth color
+        epc_tracts: GeoDataFrame with EPC tract geometries
+        start_year: year to start animation from (default 2016)
+    
+    Returns:
+        Plotly figure
+    """
+    plot_gdf = gdf[gdf['year'] >= start_year].copy()
+    plot_gdf['is_epc'] = plot_gdf['GEOID'].isin(epc_tracts['GEOID'])
+
+    vabs = plot_gdf[color_col].abs().quantile(0.99)
+
+    fig = px.choropleth_mapbox(
+        plot_gdf,
+        geojson=plot_gdf.set_index("GEOID").__geo_interface__,
+        locations="GEOID",
+        color=color_col,
+        hover_name="GEOID",
+        hover_data={'is_epc': True, 'opened': True, 'closed': True, 'gross_exit_rate': True, 'biz_stock': True},
+        animation_frame="year",
+        mapbox_style="carto-positron",
+        zoom=10,
+        center={"lat": 37.7749, "lon": -122.4194},
+        color_continuous_scale="RdBu",
+        color_continuous_midpoint=0,
+        range_color=[-vabs, vabs],
+        height=600,
+        width=700
+    )
+
+    epc_outline = plot_gdf[plot_gdf['is_epc']]
+    fig.add_trace(go.Choroplethmapbox(
+        geojson=epc_outline.set_index("GEOID").__geo_interface__,
+        locations=epc_outline["GEOID"],
+        z=[1] * len(epc_outline),
+        colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
+        marker_line_color='black',
+        marker_line_width=3,
+        showscale=False,
+        hoverinfo='skip',
+        name='EPC Tracts'
+    ))
+
+    fig.show()
+    return fig
