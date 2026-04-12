@@ -3,7 +3,7 @@ import numpy as np
 import geopandas as gpd
 
 
-def group_points_by_poly (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
+def group_points_by_poly_year (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
     """
     Groups all the business location points by tract, year and status (open or closed)
     
@@ -14,6 +14,8 @@ def group_points_by_poly (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
     Returns:
         GeoDataFrame
     """
+
+    points = gpd.sjoin(points, polygons, how="left", predicate="within")
 
     year_col = 'year_open' if 'year_open' in points.columns else 'year'
 
@@ -48,6 +50,7 @@ def group_points_by_poly (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
     Returns:
         GeoDataFrame
     """
+    points = gpd.sjoin(points, polygons, how="left", predicate="within")
 
     tract_grouped = (
         points
