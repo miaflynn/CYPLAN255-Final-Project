@@ -6,36 +6,42 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 
 
-def group_points_by_poly_year (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame, naics_filter: str = None):
+def group_points_by_poly_year(
+    points: gpd.GeoDataFrame,
+    polygons: gpd.GeoDataFrame,
+    id_col: str = "GEOID",
+    naics_filter: str = None
+):
     """
-    Groups all the business location points by tract, year and status (open or closed)
+    Groups all the business location points by polygon ID, year and status (open or closed).
     
     Parameters:
         points: geodataframe with point data
-        polygons: geodataframe with tract geometries
+        polygons: geodataframe with polygon geometries
+        id_col: column name to use as the polygon identifier (default: "GEOID")
+        naics_filter: optional string label for the NAICS filter applied
     
     Returns:
         GeoDataFrame
     """
-
     points = gpd.sjoin(points, polygons, how="left", predicate="within")
 
     year_col = 'year_open' if 'year_open' in points.columns else 'year'
 
     tract_year = (
         points
-        .groupby(["GEOID", year_col, "status"])
+        .groupby([id_col, year_col, "status"])
         .size()
         .reset_index(name="count")
-        .pivot(index=["GEOID", year_col], columns="status", values="count")
+        .pivot(index=[id_col, year_col], columns="status", values="count")
         .fillna(0)
         .reset_index()
         .sort_values(year_col)
     )
 
-    tracts_plot = polygons[["GEOID", "geometry"]].merge(
+    tracts_plot = polygons[[id_col, "geometry"]].merge(
         tract_year,
-        on="GEOID",
+        on=id_col,
         how="left"
     ).fillna(0)
 
@@ -44,37 +50,34 @@ def group_points_by_poly_year (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFr
     return tracts_plot
 
 
-def group_points_by_poly (points: gpd.GeoDataFrame, polygons: gpd.GeoDataFrame):
-    """
-    Groups all the business location points by tract and status (open or closed)
-    
-    Parameters:
-        points: geodataframe with point data
-        polygons: geodataframe with tract geometries
-    
-    Returns:
-        GeoDataFrame
-    """
+def group_points_by_poly(
+    points: gpd.GeoDataFrame,
+    polygons: gpd.GeoDataFrame,
+    id_col: str = "GEOID"
+):
     points = gpd.sjoin(points, polygons, how="left", predicate="within")
 
     tract_grouped = (
         points
-        .groupby(["GEOID", 'status'])
+        .groupby([id_col, "status"])
         .size()
         .reset_index(name="count")
-        .pivot(index=["GEOID"], columns="status", values="count")
+        .pivot(index=[id_col], columns="status", values="count")
         .fillna(0)
         .reset_index()
     )
 
-    tracts_plot = polygons[["GEOID", "geometry"]].merge(
-        tract_grouped,
-        on="GEOID",
-        how="left"
-    ).fillna(0)
+    biz_stock = (
+        points
+        .groupby(id_col)['uniqueid']
+        .nunique()
+        .reset_index(name='biz_stock')
+    )
+
+    tracts_plot = polygons[[id_col, "geometry"]].merge(tract_grouped, on=id_col, how="left").fillna(0)
+    tracts_plot = tracts_plot.merge(biz_stock, on=id_col, how="left")
 
     return tracts_plot
-
 
 def clip_to_2016(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     year_col = 'year_open' if 'year_open' in gdf.columns else 'year'
@@ -118,9 +121,9 @@ def filter_by_naics_name(gdf: gpd.GeoDataFrame, naics_name:str):
 
   return gdf
   
-#break
+#---------------------
 
-def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDataFrame, poly_gdf: gpd.GeoDataFrame, naics_name: str = None) -> gpd.GeoDataFrame:
+def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDataFrame, poly_gdf: gpd.GeoDataFrame, id_col: str = 'GEO_ID', naics_name: str = None) -> gpd.GeoDataFrame:
     """
     Groups by tract and year and calculates business dynamics metrics for each tract and year.
     Takes an optional naics_name variable to filter by naics code
@@ -128,7 +131,7 @@ def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDat
     Parameters:
         open_close_gdf: GeoDataFrame with raw business point data (openings and closings)
         biz_gdf: GeoDataFrame with individual business records
-        poly_gdf: GeoDataFrame with tract/block group geometries and GEOID
+        poly_gdf: GeoDataFrame with tract/block group geometries and id_col (usually GEO_ID)
         naics_name: optional NAICS name string to filter by (supports | for multiple codes)
     
     Returns:
@@ -143,16 +146,16 @@ def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDat
         biz = filter_by_naics_name(biz, naics_name)
 
     # group points to tracts
-    gdf = group_points_by_poly_year(open_close, poly_gdf, naics_filter=naics_name)
+    gdf = group_points_by_poly_year(open_close, poly_gdf, id_col=id_col, naics_filter=naics_name)
 
     ## net change (openings-closings)
     gdf['net_change'] = gdf['opened'] - gdf['closed']
 
     # get 2016 baseline of net change for each geometry
-    baseline = gdf[gdf['year'] == 2016][['GEOID', 'net_change']].rename(columns={'net_change': 'baseline_2016'})
+    baseline = gdf[gdf['year'] == 2016][[id_col, 'net_change']].rename(columns={'net_change': 'baseline_2016'})
 
     # merge baseline into gdf of openings closings and tracts
-    gdf = gdf.merge(baseline, on='GEOID')
+    gdf = gdf.merge(baseline, on=id_col)
 
     # calculating percent chg in growth from baseline of 2016
     gdf['growth_pct_over_2016'] = (gdf['net_change'] / gdf['baseline_2016']) * 100
@@ -173,14 +176,14 @@ def calc_business_dynamics(open_close_gdf: gpd.GeoDataFrame, biz_gdf: gpd.GeoDat
     biz_exploded = biz.explode('active_years').rename(columns={'active_years': 'year'})
 
     # joining this exploded gdf with tract/grp GEOID of its location
-    biz_exploded = gpd.sjoin(biz_exploded, poly_gdf[['GEOID', 'geometry']], how='left', predicate='within')
+    biz_exploded = gpd.sjoin(biz_exploded, poly_gdf[[id_col, 'geometry']], how='left', predicate='within')
 
     # grouping by geoid and year and counting the number of businesses in each year
-    biz_stock = biz_exploded.groupby(['GEOID', 'year']).size().reset_index(name='biz_stock')
+    biz_stock = biz_exploded.groupby([id_col, 'year']).size().reset_index(name='biz_stock')
 
     # joining that grouped df into gdf, which is already grouped by geoid and year
     # joining on the left, which means biz_stock rows for years not included in open_close will not be carried over
-    gdf = gdf.merge(biz_stock, on=['GEOID', 'year'], how='left')
+    gdf = gdf.merge(biz_stock, on=[id_col, 'year'], how='left')
 
     # calculating net entry rate for each tract/grp and year
     gdf['net_entry_rate'] = (gdf['net_change'] / gdf['biz_stock']) * 100
