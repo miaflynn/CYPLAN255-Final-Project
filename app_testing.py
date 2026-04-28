@@ -170,6 +170,17 @@ def update_sector_charts(selected, metric):
     
     chart_height = 260 if len(selected) <= 2 else 200
 
+
+    color_dict = {
+    'Retail':                               'brown',
+    'Service':                              'teal',
+    'Food & Entertainment':                 'orange',
+    'Personal Services':                    'lightblue',
+    'Education & Health':                   'purple',
+    'Manufacturing & Industrial':           'red',
+    'Utilities & Construction':             'blue'
+    }
+
     charts = []
     for neighborhood in selected:
         df = naics_df[naics_df['neighborhood'] == neighborhood]
@@ -181,7 +192,8 @@ def update_sector_charts(selected, metric):
                 x=sector_df['year'],
                 y=sector_df[metric],
                 mode='lines',
-                name=sector
+                name=sector,
+                line=dict(color=color_dict[sector])
             ))
 
         fig.update_layout(
